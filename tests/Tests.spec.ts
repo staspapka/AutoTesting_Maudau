@@ -5,7 +5,7 @@ test('Search product by name', async ({ page }) => {
   const productName = 'Jameson';
 
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = page.getByRole('button', { name: 'Так' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
 
   const firstProductTitle = page.getByTestId('productName').first();
 
@@ -17,7 +17,7 @@ test('Search product by name', async ({ page }) => {
 
   await searchButton.click();
 
-  await ageConfirmationModal.isVisible;
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
   await confirmButton.click();
 
   await expect(firstProductTitle).toBeVisible();
@@ -32,14 +32,14 @@ test('Filter Products by Price Range', async ({ page }) => {
   const maxInput = page.getByTestId('toPrice');
 
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = page.getByRole('button', { name: 'Так' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
 
   const acceptFilerButton = page.getByTestId('submitPriceBtn');
   const productPrices = page.getByTestId('finalPrice');
 
   await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
 
-  await ageConfirmationModal.isVisible;
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
   await confirmButton.click();
 
   await minInput.fill(minPrice);
@@ -66,17 +66,19 @@ test('Sort Products by Price', async ({ page }) => {
   const sortTrigger = page.getByTestId('sortBy').getByRole('button');
 
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = page.getByRole('button', { name: 'Так' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
 
   const cheapLink = page.getByTestId('sortModal').getByRole('link', { name: 'Дешеві' });
 
   await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
 
-  await expect(ageConfirmationModal).toBeVisible;
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
   await confirmButton.click();
 
+  await page.waitForLoadState('networkidle');
+
   await sortTrigger.hover();
-  await expect(cheapLink).toBeVisible({ timeout: 5000 });
+  await expect(cheapLink).toBeVisible({ timeout: 15000 });
   await cheapLink.click();
 
   await page.waitForLoadState('networkidle');
@@ -94,7 +96,7 @@ test('Sort Products by Price', async ({ page }) => {
 test('Add prduct to cart', async ({ page }) => {
   const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = page.getByRole('button', { name: 'Так' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
 
   const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
   const cartOpen = page.getByTestId('Cart');
@@ -107,9 +109,8 @@ test('Add prduct to cart', async ({ page }) => {
     { waitUntil: 'networkidle' },
   );
 
-  await expect(ageConfirmationModal).toBeVisible;
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
   await confirmButton.click();
-
   const pagePriceText = await productPriceOnPage.innerText();
   const pagePrice = parseInt(pagePriceText.replace(/[^0-9]/g, ''));
 
@@ -129,7 +130,7 @@ test('Add prduct to cart', async ({ page }) => {
 test('Increase Product Quantity in Cart', async ({ page }) => {
   const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = page.getByRole('button', { name: 'Так' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
 
   const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
   const cartOpen = page.getByTestId('Cart');
@@ -146,7 +147,7 @@ test('Increase Product Quantity in Cart', async ({ page }) => {
     { waitUntil: 'networkidle' },
   );
 
-  await expect(ageConfirmationModal).toBeVisible;
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
   await confirmButton.click();
 
   const pagePriceText = await productPriceOnPage.innerText();
@@ -165,4 +166,35 @@ test('Increase Product Quantity in Cart', async ({ page }) => {
   const cartPrice = parseInt(cartPriceText.replace(/[^0-9]/g, ''));
 
   expect(cartPrice).toBe(pagePrice * Number(multiplyer));
+});
+
+test('Remove Product from Cart', async ({ page }) => {
+  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
+  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
+
+  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
+  const cartOpen = page.getByTestId('Cart');
+
+  await page.goto(
+    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
+    { waitUntil: 'networkidle' },
+  );
+
+  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
+  await confirmButton.click();
+
+  await buyButton.click();
+  await cartOpen.click();
+
+  await expect(page.getByRole('heading', { name: 'Кошик' })).toBeVisible();
+
+  const trashButton = cartOpen.getByTestId('trashBtn');
+
+  await page.locator('.chakra-button.md-css-dgtuqo').click();
+
+  const emptyCartMessage = page.getByText('Ваш кошик порожній', { exact: false });
+
+  await expect(page.getByRole('heading', { name: 'Кошик пустий' })).toBeVisible({ timeout: 10000 });
+
+  await expect(page.getByTestId('cartProductItem')).toHaveCount(0);
 });
