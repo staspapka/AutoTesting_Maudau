@@ -125,3 +125,44 @@ test('Add prduct to cart', async ({ page }) => {
 
   expect(cartPrice).toBe(pagePrice);
 });
+
+test('Increase Product Quantity in Cart', async ({ page }) => {
+  const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
+  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
+  const confirmButton = page.getByRole('button', { name: 'Так' });
+
+  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
+  const cartOpen = page.getByTestId('Cart');
+
+  const cartProductCount = page.getByTestId('productInCartTotalCount');
+  const cartTotalPrice = page.getByTestId('totalPrice');
+  const cartDrawer = page.locator('nav.EZDrawer__container').filter({ hasText: 'Кошик' });
+
+  const plusButton = cartDrawer.getByTestId('plus');
+  const multiplyer = '2';
+
+  await page.goto(
+    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
+    { waitUntil: 'networkidle' },
+  );
+
+  await expect(ageConfirmationModal).toBeVisible;
+  await confirmButton.click();
+
+  const pagePriceText = await productPriceOnPage.innerText();
+  const pagePrice = parseInt(pagePriceText.replace(/[^0-9]/g, ''));
+
+  await buyButton.click();
+  await cartOpen.click();
+
+  await expect(cartDrawer).toBeVisible();
+
+  await plusButton.click();
+
+  await expect(cartProductCount).toContainText(new RegExp(multiplyer));
+
+  const cartPriceText = await cartTotalPrice.innerText();
+  const cartPrice = parseInt(cartPriceText.replace(/[^0-9]/g, ''));
+
+  expect(cartPrice).toBe(pagePrice * Number(multiplyer));
+});
