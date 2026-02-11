@@ -64,6 +64,7 @@ test('Filter Products by Price Range', async ({ page }) => {
 test('Sort Products by Price', async ({ page }) => {
   const productPrice = page.getByTestId('finalPrice');
   const sortTrigger = page.getByTestId('sortBy').getByRole('button');
+
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
   const confirmButton = page.getByRole('button', { name: 'Так' });
 
@@ -71,7 +72,7 @@ test('Sort Products by Price', async ({ page }) => {
 
   await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
 
-  await ageConfirmationModal.isVisible;
+  await expect(ageConfirmationModal).toBeVisible;
   await confirmButton.click();
 
   await sortTrigger.hover();
@@ -88,4 +89,39 @@ test('Sort Products by Price', async ({ page }) => {
   const secondPrice = parseInt(secondPriceText.replace(/\s/g, ''));
 
   expect(firstPrice).toBeLessThanOrEqual(secondPrice);
+});
+
+test('Add prduct to cart', async ({ page }) => {
+  const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
+  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
+  const confirmButton = page.getByRole('button', { name: 'Так' });
+
+  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
+  const cartOpen = page.getByTestId('Cart');
+
+  const cartProductCount = page.getByTestId('productInCartTotalCount');
+  const cartTotalPrice = page.getByTestId('totalPrice');
+
+  await page.goto(
+    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
+    { waitUntil: 'networkidle' },
+  );
+
+  await expect(ageConfirmationModal).toBeVisible;
+  await confirmButton.click();
+
+  const pagePriceText = await productPriceOnPage.innerText();
+  const pagePrice = parseInt(pagePriceText.replace(/[^0-9]/g, ''));
+
+  await buyButton.click();
+  await cartOpen.click();
+
+  await expect(page.getByRole('heading', { name: 'Кошик' })).toBeVisible();
+
+  await expect(cartProductCount).toContainText(/^1/);
+
+  const cartPriceText = await cartTotalPrice.innerText();
+  const cartPrice = parseInt(cartPriceText.replace(/[^0-9]/g, ''));
+
+  expect(cartPrice).toBe(pagePrice);
 });
