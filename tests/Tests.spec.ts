@@ -33,6 +33,7 @@ test('Filter Products by Price Range', async ({ page }) => {
 
   const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
   const confirmButton = page.getByRole('button', { name: 'Так' });
+
   const acceptFilerButton = page.getByTestId('submitPriceBtn');
   const productPrices = page.getByTestId('finalPrice');
 
@@ -58,4 +59,33 @@ test('Filter Products by Price Range', async ({ page }) => {
     expect(cleanPrice).toBeGreaterThanOrEqual(minRangePrice);
     expect(cleanPrice).toBeLessThanOrEqual(maxRangePrice);
   }
+});
+
+test('Sort Products by Price', async ({ page }) => {
+  const productPrice = page.getByTestId('finalPrice');
+  const sortTrigger = page.getByTestId('sortBy').getByRole('button');
+  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
+  const confirmButton = page.getByRole('button', { name: 'Так' });
+
+  const cheapLink = page.getByTestId('sortModal').getByRole('link', { name: 'Дешеві' });
+
+  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
+
+  await ageConfirmationModal.isVisible;
+  await confirmButton.click();
+
+  await sortTrigger.hover();
+  await expect(cheapLink).toBeVisible({ timeout: 5000 });
+  await cheapLink.click();
+
+  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(new RegExp('/category/viski/sort=cheap'));
+
+  const firstPriceText = await productPrice.nth(0).innerText();
+  const secondPriceText = await productPrice.nth(1).innerText();
+
+  const firstPrice = parseInt(firstPriceText.replace(/\s/g, ''));
+  const secondPrice = parseInt(secondPriceText.replace(/\s/g, ''));
+
+  expect(firstPrice).toBeLessThanOrEqual(secondPrice);
 });
