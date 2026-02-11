@@ -1,0 +1,23 @@
+{
+  "name": "autotesting",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/staspapka/AutoTesting_Maudau.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/staspapka/AutoTesting_Maudau/issues"
+  },
+  "homepage": "https://github.com/staspapka/AutoTesting_Maudau#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.2.3"
+  }
+}
