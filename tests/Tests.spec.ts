@@ -1,200 +1,139 @@
 import { test, expect } from '@playwright/test';
+import { PriceUtils } from '../utils/PriceUtils';
+import { CartDrawer } from '../pages/CartDrawer';
+import { ProductPage } from '../pages/ProductPage';
+import { CatalogPage } from '../pages/CatalogPage';
+import { BasePage } from '../pages/BasePage';
 
 test('Search product by name', async ({ page }) => {
-  const searchInput = page.getByTestId('searchInput');
+  const catalog = new CatalogPage(page);
+  const base = new BasePage(page);
   const productName = 'Jameson';
 
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
+  await page.goto('https://maudau.com.ua/', { waitUntil: 'domcontentloaded' });
 
-  const firstProductTitle = page.getByTestId('productName').first();
+  await catalog.search(productName);
 
-  const searchButton = page.getByTestId('searchBtn');
+  await base.confirmAge();
 
-  await page.goto('https://maudau.com.ua/', { waitUntil: 'networkidle' });
+  const firstTitle = catalog.productTitles.first();
 
-  await searchInput.fill(productName);
-
-  await searchButton.click();
-
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
-
-  await expect(firstProductTitle).toBeVisible();
-  await expect(firstProductTitle).toContainText(productName, { ignoreCase: true });
+  await expect(firstTitle).toBeVisible();
+  await expect(firstTitle).toContainText(productName, { ignoreCase: true });
 });
 
 test('Filter Products by Price Range', async ({ page }) => {
+  const catalog = new CatalogPage(page);
+  const base = new BasePage(page);
+
   const minPrice = '500';
   const maxPrice = '1000';
 
-  const minInput = page.getByTestId('fromPrice');
-  const maxInput = page.getByTestId('toPrice');
+  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'domcontentloaded' });
 
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
+  await base.confirmAge();
 
-  const acceptFilerButton = page.getByTestId('submitPriceBtn');
-  const productPrices = page.getByTestId('finalPrice');
-
-  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
-
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
-
-  await minInput.fill(minPrice);
-  await maxInput.fill(maxPrice);
-  await acceptFilerButton.click();
+  await catalog.filterByPrice(minPrice, maxPrice);
 
   await expect(page).toHaveURL(new RegExp(`price=${minPrice}00-${maxPrice}00`));
-  await expect(page.getByTestId('activeFilter')).toBeVisible();
 
-  const allPricesText = await productPrices.allTextContents();
+  const allPricesText = await catalog.productPrices.allTextContents();
 
   for (const priceText of allPricesText) {
-    const cleanPrice = parseInt(priceText.replace(/[^0-9]/g, ''));
-    const minRangePrice = 500;
-    const maxRangePrice = 1000;
+    const cleanPrice = PriceUtils.clean(priceText);
 
-    expect(cleanPrice).toBeGreaterThanOrEqual(minRangePrice);
-    expect(cleanPrice).toBeLessThanOrEqual(maxRangePrice);
+    expect(cleanPrice).toBeGreaterThanOrEqual(Number(minPrice));
+    expect(cleanPrice).toBeLessThanOrEqual(Number(maxPrice));
   }
 });
 
 test('Sort Products by Price', async ({ page }) => {
-  const productPrice = page.getByTestId('finalPrice');
-  const sortTrigger = page.getByTestId('sortBy').getByRole('button');
+  const catalog = new CatalogPage(page);
+  const base = new BasePage(page);
 
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
+  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'domcontentloaded' });
 
-  const cheapLink = page.getByTestId('sortModal').getByRole('link', { name: 'Дешеві' });
+  await base.confirmAge();
 
-  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'networkidle' });
+  await catalog.sortByCheap();
 
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
-
-  await page.waitForLoadState('networkidle');
-
-  await sortTrigger.hover();
-  await expect(cheapLink).toBeVisible({ timeout: 15000 });
-  await cheapLink.click();
-
-  await page.waitForLoadState('networkidle');
-  await expect(page).toHaveURL(new RegExp('/category/viski/sort=cheap'));
-
-  const firstPriceText = await productPrice.nth(0).innerText();
-  const secondPriceText = await productPrice.nth(1).innerText();
-
-  const firstPrice = parseInt(firstPriceText.replace(/\s/g, ''));
-  const secondPrice = parseInt(secondPriceText.replace(/\s/g, ''));
+  const firstPrice = await catalog.getPriceByIndex(0);
+  const secondPrice = await catalog.getPriceByIndex(1);
 
   expect(firstPrice).toBeLessThanOrEqual(secondPrice);
 });
 
 test('Add prduct to cart', async ({ page }) => {
-  const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
-
-  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
-  const cartOpen = page.getByTestId('Cart');
-
-  const cartProductCount = page.getByTestId('productInCartTotalCount');
-  const cartTotalPrice = page.getByTestId('totalPrice');
+  const productPage = new ProductPage(page);
+  const cart = new CartDrawer(page);
+  const base = new BasePage(page);
 
   await page.goto(
     'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'networkidle' },
+    { waitUntil: 'domcontentloaded' },
   );
 
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
-  const pagePriceText = await productPriceOnPage.innerText();
-  const pagePrice = parseInt(pagePriceText.replace(/[^0-9]/g, ''));
+  await base.confirmAge();
 
-  await buyButton.click();
-  await cartOpen.click();
+  const pagePrice = PriceUtils.clean(await productPage.priceLabel.innerText());
 
-  await expect(page.getByRole('heading', { name: 'Кошик' })).toBeVisible();
+  await productPage.addToCart();
+  await productPage.openCart();
 
-  await expect(cartProductCount).toContainText(/^1/);
+  await expect(cart.container).toBeVisible();
+  await expect(cart.countLabel).toContainText(/^1/);
 
-  const cartPriceText = await cartTotalPrice.innerText();
-  const cartPrice = parseInt(cartPriceText.replace(/[^0-9]/g, ''));
-
+  const cartPrice = PriceUtils.clean(await cart.totalPriceLabel.innerText());
   expect(cartPrice).toBe(pagePrice);
 });
 
 test('Increase Product Quantity in Cart', async ({ page }) => {
-  const productPriceOnPage = page.getByTestId('productSideBlock').getByTestId('finalPrice');
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
-
-  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
-  const cartOpen = page.getByTestId('Cart');
-
-  const cartProductCount = page.getByTestId('productInCartTotalCount');
-  const cartTotalPrice = page.getByTestId('totalPrice');
-  const cartDrawer = page.locator('nav.EZDrawer__container').filter({ hasText: 'Кошик' });
-
-  const plusButton = cartDrawer.getByTestId('plus');
-  const multiplyer = '2';
+  const productPage = new ProductPage(page);
+  const cart = new CartDrawer(page);
+  const base = new BasePage(page);
 
   await page.goto(
     'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'networkidle' },
+    { waitUntil: 'domcontentloaded' },
   );
 
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
+  await base.confirmAge();
+  const unitPrice = PriceUtils.clean(await productPage.priceLabel.innerText());
 
-  const pagePriceText = await productPriceOnPage.innerText();
-  const pagePrice = parseInt(pagePriceText.replace(/[^0-9]/g, ''));
+  await productPage.addToCart();
+  await productPage.openCart();
 
-  await buyButton.click();
-  await cartOpen.click();
+  await expect(cart.container).toBeVisible();
+  await cart.addOneMore();
 
-  await expect(cartDrawer).toBeVisible();
+  await expect(cart.countLabel).toContainText('2');
 
-  await plusButton.click();
-
-  await expect(cartProductCount).toContainText(new RegExp(multiplyer));
-
-  const cartPriceText = await cartTotalPrice.innerText();
-  const cartPrice = parseInt(cartPriceText.replace(/[^0-9]/g, ''));
-
-  expect(cartPrice).toBe(pagePrice * Number(multiplyer));
+  const finalCartPrice = PriceUtils.clean(await cart.totalPriceLabel.innerText());
+  expect(finalCartPrice).toBe(unitPrice * 2);
 });
 
 test('Remove Product from Cart', async ({ page }) => {
-  const ageConfirmationModal = page.getByRole('dialog', { name: 'Вам вже виповнилось 18 років?' });
-  const confirmButton = ageConfirmationModal.getByRole('button', { name: 'Так' });
-
-  const buyButton = page.getByTestId('productSideBlock').getByTestId('addToCartBtn');
-  const cartOpen = page.getByTestId('Cart');
+  const productPage = new ProductPage(page);
+  const cart = new CartDrawer(page);
+  const base = new BasePage(page);
 
   await page.goto(
     'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'networkidle' },
+    { waitUntil: 'domcontentloaded' },
   );
+  await base.confirmAge();
 
-  await expect(ageConfirmationModal).toBeVisible({ timeout: 15000 });
-  await confirmButton.click();
+  const productName = await productPage.title.innerText();
 
-  await buyButton.click();
-  await cartOpen.click();
+  await productPage.addToCart();
+  await productPage.openCart();
 
-  await expect(page.getByRole('heading', { name: 'Кошик' })).toBeVisible();
+  await expect(cart.container).toBeVisible();
+  await expect(cart.cartItems).toHaveCount(1);
 
-  const trashButton = cartOpen.getByTestId('trashBtn');
+  await cart.removeProduct(productName);
 
-  await page.locator('.chakra-button.md-css-dgtuqo').click();
+  await expect(cart.emptyCartHeading).toBeVisible({ timeout: 10000 });
 
-  const emptyCartMessage = page.getByText('Ваш кошик порожній', { exact: false });
-
-  await expect(page.getByRole('heading', { name: 'Кошик пустий' })).toBeVisible({ timeout: 10000 });
-
-  await expect(page.getByTestId('cartProductItem')).toHaveCount(0);
+  await expect(cart.cartItems).toHaveCount(0);
 });
