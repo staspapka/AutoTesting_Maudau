@@ -9,6 +9,14 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Тести для фільтрації (наприклад, @T12345)'
+        required: false
+        default: ''
+      testomatio:
+        description: 'ID запуску в Testomat'
+        required: false
 jobs:
   build:
 
