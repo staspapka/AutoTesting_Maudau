@@ -4,6 +4,16 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: 'tests to grep '
+        required: false
+        default: ''
+      run:
+        required: false
+      testomatio:
+        required: false
 jobs:
   test:
     timeout-minutes: 60
