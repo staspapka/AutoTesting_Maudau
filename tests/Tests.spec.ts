@@ -5,45 +5,44 @@ import { ProductPage } from '../pages/ProductPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { BasePage } from '../pages/BasePage';
 
+import { searchData, testProduct } from '../testData/products';
+import { priceFilter } from '../testData/filters';
+
 test('Search product by name', async ({ page }) => {
   const catalog = new CatalogPage(page);
   const base = new BasePage(page);
-  const productName = 'Jameson';
 
-  await page.goto('https://maudau.com.ua/', { waitUntil: 'domcontentloaded' });
+  await base.goto('home');
 
-  await catalog.search(productName);
+  await catalog.search(searchData.searchQuery);
 
   await base.confirmAge();
 
   const firstTitle = catalog.productTitles.first();
 
   await expect(firstTitle).toBeVisible();
-  await expect(firstTitle).toContainText(productName, { ignoreCase: true });
+  await expect(firstTitle).toContainText(searchData.searchQuery, { ignoreCase: true });
 });
 
 test('Filter Products by Price Range', async ({ page }) => {
   const catalog = new CatalogPage(page);
   const base = new BasePage(page);
 
-  const minPrice = '500';
-  const maxPrice = '1000';
-
-  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'domcontentloaded' });
+  await base.goto('whiskyCategory');
 
   await base.confirmAge();
 
-  await catalog.filterByPrice(minPrice, maxPrice);
+  await catalog.filterByPrice(priceFilter.min, priceFilter.max);
 
-  await expect(page).toHaveURL(new RegExp(`price=${minPrice}00-${maxPrice}00`));
+  await expect(page).toHaveURL(new RegExp(`price=${priceFilter.min}00-${priceFilter.max}00`));
 
   const allPricesText = await catalog.productPrices.allTextContents();
 
   for (const priceText of allPricesText) {
     const cleanPrice = PriceUtils.clean(priceText);
 
-    expect(cleanPrice).toBeGreaterThanOrEqual(Number(minPrice));
-    expect(cleanPrice).toBeLessThanOrEqual(Number(maxPrice));
+    expect(cleanPrice).toBeGreaterThanOrEqual(Number(priceFilter.min));
+    expect(cleanPrice).toBeLessThanOrEqual(Number(priceFilter.max));
   }
 });
 
@@ -51,8 +50,7 @@ test('Sort Products by Price', async ({ page }) => {
   const catalog = new CatalogPage(page);
   const base = new BasePage(page);
 
-  await page.goto('https://maudau.com.ua/category/viski', { waitUntil: 'domcontentloaded' });
-
+  await base.goto('whiskyCategory');
   await base.confirmAge();
 
   await catalog.sortByCheap();
@@ -68,10 +66,7 @@ test('Add prduct to cart', async ({ page }) => {
   const cart = new CartDrawer(page);
   const base = new BasePage(page);
 
-  await page.goto(
-    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'domcontentloaded' },
-  );
+  await base.goto('specificProduct');
 
   await base.confirmAge();
 
@@ -92,10 +87,7 @@ test('Increase Product Quantity in Cart', async ({ page }) => {
   const cart = new CartDrawer(page);
   const base = new BasePage(page);
 
-  await page.goto(
-    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'domcontentloaded' },
-  );
+  await base.goto('specificProduct');
 
   await base.confirmAge();
   const unitPrice = PriceUtils.clean(await productPage.priceLabel.innerText());
@@ -117,10 +109,8 @@ test('Remove Product from Cart', async ({ page }) => {
   const cart = new CartDrawer(page);
   const base = new BasePage(page);
 
-  await page.goto(
-    'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
-    { waitUntil: 'domcontentloaded' },
-  );
+  await base.goto('specificProduct');
+
   await base.confirmAge();
 
   const productName = await productPage.title.innerText();
