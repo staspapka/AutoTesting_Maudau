@@ -37,3 +37,7 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+    - run: npx codeceptjs run --grep "${{ github.event.inputs.grep }}"
+      env:
+        TESTOMATIO: "${{ secrets.TESTOMATIO }}"
+        TESTOMATIO_RUN: "${{ github.event.inputs.testomatio }}"
