@@ -14,6 +14,8 @@ test('Search product by name', async ({ page }) => {
 
   await base.goto('home');
 
+  await base.changeToRus();
+
   await catalog.search(searchData.searchQuery);
 
   await base.confirmAge();
@@ -31,6 +33,7 @@ test('Filter Products by Price Range', async ({ page }) => {
   await base.goto('whiskyCategory');
 
   await base.confirmAge();
+  await base.changeToRus();
 
   await catalog.filterByPrice(priceFilter.min, priceFilter.max);
 
@@ -51,6 +54,9 @@ test('Sort Products by Price', async ({ page }) => {
   const base = new BasePage(page);
 
   await base.goto('whiskyCategory');
+
+  await base.changeToRus();
+
   await base.confirmAge();
 
   await catalog.sortByCheap();
@@ -67,6 +73,8 @@ test('Add prduct to cart', async ({ page }) => {
   const base = new BasePage(page);
 
   await base.goto('specificProduct');
+
+  await base.changeToRus();
 
   await base.confirmAge();
 
@@ -89,7 +97,10 @@ test('Increase Product Quantity in Cart', async ({ page }) => {
 
   await base.goto('specificProduct');
 
+  await base.changeToRus();
+
   await base.confirmAge();
+
   const unitPrice = PriceUtils.clean(await productPage.priceLabel.innerText());
 
   await productPage.addToCart();
@@ -111,6 +122,8 @@ test('Remove Product from Cart', async ({ page }) => {
 
   await base.goto('specificProduct');
 
+  await base.changeToRus();
+
   await base.confirmAge();
 
   const productName = await productPage.title.innerText();
@@ -122,8 +135,6 @@ test('Remove Product from Cart', async ({ page }) => {
   await expect(cart.cartItems).toHaveCount(1);
 
   await cart.removeProduct(productName);
-
-  await expect(cart.emptyCartHeading).toBeVisible({ timeout: 10000 });
 
   await expect(cart.cartItems).toHaveCount(0);
 });

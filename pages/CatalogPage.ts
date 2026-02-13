@@ -28,7 +28,7 @@ export class CatalogPage extends BasePage {
     this.maxPriceInput = this.page.getByTestId('toPrice');
     this.submitPriceBtn = this.page.getByTestId('submitPriceBtn');
     this.sortTrigger = page.getByTestId('sortBy').getByRole('button');
-    this.cheapSortOption = page.getByTestId('sortModal').getByRole('link', { name: 'Дешеві' });
+    this.cheapSortOption = page.getByTestId('sortModal').locator('a[href*="sort=cheap"]');
     this.productPrices = page.getByTestId('finalPrice');
     this.productTitles = this.page.getByTestId('productName');
   }
