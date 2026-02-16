@@ -6,8 +6,6 @@ export class ProductPage extends BasePage {
   readonly title: Locator;
   readonly priceLabel: Locator;
   readonly buyBtn: Locator;
-  readonly cartOpenBtn: Locator;
-
   constructor(page: Page) {
     super(page);
     this.container = this.page.getByTestId('productSideBlock');
@@ -16,14 +14,9 @@ export class ProductPage extends BasePage {
     this.buyBtn = this.container.getByTestId('addToCartBtn');
 
     this.title = page.locator('[product-testid="productTitle"]');
-    this.cartOpenBtn = this.page.getByTestId('Cart');
   }
 
   async addToCart() {
     await this.buyBtn.click();
-  }
-
-  async openCart() {
-    await this.cartOpenBtn.click();
   }
 }

@@ -3,4 +3,6 @@ export const routes = {
   whiskyCategory: 'https://maudau.com.ua/category/viski',
   specificProduct:
     'https://maudau.com.ua/product/viski-douglas-laing-xop-macallan-1990-30-yo-single-malt-scotch-whisky-v-korobtsi-444-07-l',
+  checkOutUa: 'https://maudau.com.ua/checkout',
+  checkOutRu: 'https://maudau.com.ua/ru/checkout',
 } as const;

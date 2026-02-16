@@ -4,6 +4,9 @@ import { CartDrawer } from '../pages/CartDrawer';
 import { ProductPage } from '../pages/ProductPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { BasePage } from '../pages/BasePage';
+import { products } from '../testData/products';
+import { routes } from '../testData/routes';
+import { NotificationComponent } from '../components/notification';
 
 import { searchData, testProduct } from '../testData/products';
 import { priceFilter } from '../testData/filters';
@@ -81,7 +84,7 @@ test('Add prduct to cart', async ({ page }) => {
   const pagePrice = PriceUtils.clean(await productPage.priceLabel.innerText());
 
   await productPage.addToCart();
-  await productPage.openCart();
+  await base.openCart();
 
   await expect(cart.container).toBeVisible();
   await expect(cart.countLabel).toContainText(/^1/);
@@ -104,7 +107,7 @@ test('Increase Product Quantity in Cart', async ({ page }) => {
   const unitPrice = PriceUtils.clean(await productPage.priceLabel.innerText());
 
   await productPage.addToCart();
-  await productPage.openCart();
+  await base.openCart();
 
   await expect(cart.container).toBeVisible();
   await cart.addOneMore();
@@ -129,7 +132,7 @@ test('Remove Product from Cart', async ({ page }) => {
   const productName = await productPage.title.innerText();
 
   await productPage.addToCart();
-  await productPage.openCart();
+  await base.openCart();
 
   await expect(cart.container).toBeVisible();
   await expect(cart.cartItems).toHaveCount(1);
@@ -137,4 +140,59 @@ test('Remove Product from Cart', async ({ page }) => {
   await cart.removeProduct(productName);
 
   await expect(cart.cartItems).toHaveCount(0);
+});
+
+test('Complex test add, remove and add another', async ({ page }) => {
+  const cart = new CartDrawer(page);
+  const base = new BasePage(page);
+  const catalog = new CatalogPage(page);
+  const notification = new NotificationComponent(page);
+
+  const ps5 = products.ps5Bundle;
+  const nintendo = products.Nintendo;
+
+  await base.goto('home');
+
+  await base.changeToRus();
+
+  await catalog.openCatalog();
+  await catalog.tech.click();
+  await catalog.goodsForGamers.click();
+  await catalog.consoles.click();
+
+  const expectedPricePs = await catalog.getProductPrice(ps5.slug);
+  await catalog.clickAddToCart(ps5.slug);
+  await notification.waitForVisible(notification.addSuccessPattern);
+  await notification.verifyAddSuccess();
+
+  await base.openCart();
+  await expect(cart.container).toBeVisible();
+
+  const actualPricePS = await cart.getProductPriceBySlug(ps5.slug);
+
+  await expect(expectedPricePs).toBe(actualPricePS);
+
+  await cart.removeProduct(ps5.name);
+  await notification.waitForVisible(notification.removeSuccessPattern);
+  await notification.verifyRemoveSuccess();
+
+  await cart.cartCloseButton.click();
+
+  const expectedPriceNintendo = await catalog.getProductPrice(nintendo.slug);
+
+  await catalog.clickAddToCart(nintendo.slug);
+  await notification.waitForVisible(notification.addSuccessPattern);
+  await notification.verifyAddSuccess();
+
+  await base.openCart();
+  await expect(cart.container).toBeVisible();
+
+  const actualPriceNintendo = await cart.getProductPriceBySlug(nintendo.slug);
+
+  await expect(expectedPriceNintendo).toBe(actualPriceNintendo);
+
+  await cart.checkOut.click();
+
+  const checkoutPattern = new RegExp(`${routes.checkOutUa}|${routes.checkOutRu}`);
+  await expect(page).toHaveURL(checkoutPattern);
 });

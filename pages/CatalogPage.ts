@@ -15,6 +15,12 @@ export class CatalogPage extends BasePage {
   readonly cheapSortOption: Locator;
   readonly productPrices: Locator;
   readonly productTitles: Locator;
+  readonly catalogBtn: Locator;
+  readonly tech: Locator;
+  readonly goodsForGamers: Locator;
+  readonly consoles: Locator;
+  readonly ps5: Locator;
+  readonly addToCart: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -31,6 +37,22 @@ export class CatalogPage extends BasePage {
     this.cheapSortOption = page.getByTestId('sortModal').locator('a[href*="sort=cheap"]');
     this.productPrices = page.getByTestId('finalPrice');
     this.productTitles = this.page.getByTestId('productName');
+    this.catalogBtn = this.headerContainer.getByTestId('catalog');
+    this.tech = page.locator('a[data-testid="menuLink"][href*="/elektronika"]');
+    this.goodsForGamers = page.locator('a[data-testid="menuLink"][href*="/tovary-dlia-heimeriv"]');
+    this.consoles = page.locator('a[data-testid="menuLink"][href*="/ihrovi-prystavky"]');
+    this.ps5 = page.locator('div[data-testid="productItem"]').filter({
+      has: page.locator(
+        'a[href*="yhrovaia-konsol-sony-playstation-5-slim-1tb-ustroistvo-dlia-dystantsyonnoi-yhr-sony-playstation-portal-white"]',
+      ),
+    });
+    this.addToCart = page.getByTestId('addToCart');
+  }
+
+  private getProductCard(slug: string): Locator {
+    return this.page.locator('div[data-testid="productItem"]').filter({
+      has: this.page.locator(`a[href*="${slug}"]`),
+    });
   }
 
   async search(productName: string) {
@@ -56,5 +78,28 @@ export class CatalogPage extends BasePage {
   async getPriceByIndex(index: number): Promise<number> {
     const priceText = await this.productPrices.nth(index).innerText();
     return PriceUtils.clean(priceText);
+  }
+
+  async openCatalog() {
+    await this.catalogBtn.hover();
+    await this.page.waitForTimeout(5000);
+    await this.catalogBtn.click();
+  }
+
+  async getProductPrice(slug: string): Promise<number> {
+    const card = this.getProductCard(slug);
+    const rawPrice = await card.getByTestId('finalPrice').innerText();
+    return PriceUtils.clean(rawPrice);
+  }
+
+  async getProductName(slug: string): Promise<string> {
+    const card = this.getProductCard(slug);
+    const name = await card.getByTestId('productName').innerText();
+    return name;
+  }
+
+  async clickAddToCart(slug: string): Promise<void> {
+    const card = this.getProductCard(slug);
+    await card.getByTestId('addToCart').click();
   }
 }

@@ -3,14 +3,19 @@ import { routes } from '../testData/routes';
 
 export class BasePage {
   readonly page: Page;
+  readonly cartOpenBtn: Locator;
   readonly ageModal: Locator;
   readonly confirmAgeBtn: Locator;
 
   constructor(page: Page) {
     this.page = page;
-
+    this.cartOpenBtn = this.page.getByTestId('Cart');
     this.ageModal = page.locator('div[data-slot="dialog-content"]');
     this.confirmAgeBtn = this.ageModal.locator('button.bg-primary-20');
+  }
+
+  async openCart() {
+    await this.cartOpenBtn.click();
   }
 
   async goto(route: keyof typeof routes) {
@@ -23,7 +28,7 @@ export class BasePage {
     const ruPattern = /\/ru($|\/)/;
 
     await Promise.all([this.page.waitForURL(ruPattern, { timeout: 20000 }), ruLink.click()]);
-
+    await this.page.waitForLoadState('domcontentloaded');
     await expect(this.page).toHaveURL(ruPattern);
   }
 
@@ -34,7 +39,7 @@ export class BasePage {
       this.page.waitForURL((url) => !url.pathname.match(/\/ru($|\/)/), { timeout: 20000 }),
       uaLink.click(),
     ]);
-
+    await this.page.waitForLoadState('domcontentloaded');
     await expect(this.page).not.toHaveURL(/\/ru($|\/)/);
   }
 
@@ -46,5 +51,6 @@ export class BasePage {
     } catch (e) {
       console.log('Age confirmation modal did not appear or was already closed.');
     }
+    await this.page.waitForLoadState('domcontentloaded');
   }
 }
