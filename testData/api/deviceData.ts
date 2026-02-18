@@ -21,3 +21,4 @@ export const devicePayloads = {
     name: 'iPhone 14 Pro Deep Purple',
   },
 };
+// USE FAKER TO GENERATE DATA

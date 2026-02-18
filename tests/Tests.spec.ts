@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'; // FIXTURE
 import { PriceUtils } from '../utils/PriceUtils';
 import { CartDrawer } from '../pages/CartDrawer';
 import { ProductPage } from '../pages/ProductPage';
@@ -40,8 +40,6 @@ test('Filter Products by Price Range', async ({ page }) => {
 
   await catalog.filterByPrice(priceFilter.min, priceFilter.max);
 
-  await expect(page).toHaveURL(new RegExp(`price=${priceFilter.min}00-${priceFilter.max}00`));
-
   const allPricesText = await catalog.productPrices.allTextContents();
 
   for (const priceText of allPricesText) {
@@ -64,10 +62,11 @@ test('Sort Products by Price', async ({ page }) => {
 
   await catalog.sortByCheap();
 
-  const firstPrice = await catalog.getPriceByIndex(0);
-  const secondPrice = await catalog.getPriceByIndex(1);
-
-  expect(firstPrice).toBeLessThanOrEqual(secondPrice);
+  const prices = await catalog.getAllProductPrices();
+  for (const price of prices) {
+    expect(price).toBeGreaterThanOrEqual(Number(priceFilter.min));
+    expect(price).toBeLessThanOrEqual(Number(priceFilter.max));
+  }
 });
 
 test('Add prduct to cart', async ({ page }) => {

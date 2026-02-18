@@ -13,7 +13,7 @@ test.describe.serial('Full API Request Lifecycle', () => {
   test('POST - Create new device', async () => {
     const response = await deviceController.createDevice(devicePayloads.iphone14);
     expect(response.status()).toBe(200);
-
+    ('');
     const body = await response.json();
     objectId = body.id;
 
