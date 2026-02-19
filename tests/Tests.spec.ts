@@ -37,8 +37,8 @@ test('Filter Products by Price Range', async ({ catalogPage, data, utils, basePa
 
 test('Sort Products by Price', async ({ catalogPage, basePage }) => {
   await basePage.goto('whiskyCategory');
-  await basePage.changeToRus();
   await basePage.confirmAge();
+  await basePage.changeToRus();
 
   await catalogPage.sortByCheap();
 
@@ -56,8 +56,8 @@ test('Sort Products by Price', async ({ catalogPage, basePage }) => {
 
 test('Add prduct to cart', async ({ productPage, cartDrawer, basePage, utils }) => {
   await basePage.goto('specificProduct');
-  await basePage.changeToRus();
   await basePage.confirmAge();
+  await basePage.changeToRus();
 
   const pagePrice = utils.clean(await productPage.priceLabel.innerText());
 
