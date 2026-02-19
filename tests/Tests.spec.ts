@@ -1,197 +1,162 @@
-import { test, expect } from '@playwright/test'; // FIXTURE
-import { PriceUtils } from '../utils/PriceUtils';
-import { CartDrawer } from '../pages/CartDrawer';
-import { ProductPage } from '../pages/ProductPage';
-import { CatalogPage } from '../pages/CatalogPage';
-import { BasePage } from '../pages/BasePage';
-import { products } from '../testData/products';
-import { routes } from '../testData/routes';
-import { NotificationComponent } from '../components/notification';
+import { test, expect } from '../fixtures/base';
 
-import { searchData, testProduct } from '../testData/products';
-import { priceFilter } from '../testData/filters';
+test('Search product by name', async ({ catalogPage, basePage, data }) => {
+  await basePage.goto('home');
+  await basePage.changeToRus();
 
-test('Search product by name', async ({ page }) => {
-  const catalog = new CatalogPage(page);
-  const base = new BasePage(page);
+  await catalogPage.search(data.search.searchQuery);
 
-  await base.goto('home');
+  await basePage.confirmAge();
 
-  await base.changeToRus();
-
-  await catalog.search(searchData.searchQuery);
-
-  await base.confirmAge();
-
-  const firstTitle = catalog.productTitles.first();
+  const firstTitle = catalogPage.productTitles.first();
 
   await expect(firstTitle).toBeVisible();
-  await expect(firstTitle).toContainText(searchData.searchQuery, { ignoreCase: true });
+  await expect(firstTitle).toContainText(data.search.searchQuery, { ignoreCase: true });
 });
 
-test('Filter Products by Price Range', async ({ page }) => {
-  const catalog = new CatalogPage(page);
-  const base = new BasePage(page);
+test('Filter Products by Price Range', async ({ catalogPage, data, utils, basePage }) => {
+  await basePage.goto('whiskyCategory');
+  await basePage.confirmAge();
+  await basePage.changeToRus();
 
-  await base.goto('whiskyCategory');
+  await catalogPage.filterByPrice(data.filters.min, data.filters.max);
 
-  await base.confirmAge();
-  await base.changeToRus();
+  const appliedMin = Number(await catalogPage.minPriceInput.inputValue());
+  const appliedMax = Number(await catalogPage.maxPriceInput.inputValue());
 
-  await catalog.filterByPrice(priceFilter.min, priceFilter.max);
+  const allPricesText = await catalogPage.productPrices.allTextContents();
+  const prices = allPricesText.map((text) => utils.clean(text));
 
-  const allPricesText = await catalog.productPrices.allTextContents();
+  expect(prices.length).toBeGreaterThan(0);
 
-  for (const priceText of allPricesText) {
-    const cleanPrice = PriceUtils.clean(priceText);
-
-    expect(cleanPrice).toBeGreaterThanOrEqual(Number(priceFilter.min));
-    expect(cleanPrice).toBeLessThanOrEqual(Number(priceFilter.max));
-  }
-});
-
-test('Sort Products by Price', async ({ page }) => {
-  const catalog = new CatalogPage(page);
-  const base = new BasePage(page);
-
-  await base.goto('whiskyCategory');
-
-  await base.changeToRus();
-
-  await base.confirmAge();
-
-  await catalog.sortByCheap();
-
-  const prices = await catalog.getAllProductPrices();
   for (const price of prices) {
-    expect(price).toBeGreaterThanOrEqual(Number(priceFilter.min));
-    expect(price).toBeLessThanOrEqual(Number(priceFilter.max));
+    expect(price).toBeGreaterThanOrEqual(appliedMin);
+    expect(price).toBeLessThanOrEqual(appliedMax);
   }
 });
 
-test('Add prduct to cart', async ({ page }) => {
-  const productPage = new ProductPage(page);
-  const cart = new CartDrawer(page);
-  const base = new BasePage(page);
+test('Sort Products by Price', async ({ catalogPage, basePage }) => {
+  await basePage.goto('whiskyCategory');
+  await basePage.changeToRus();
+  await basePage.confirmAge();
 
-  await base.goto('specificProduct');
+  await catalogPage.sortByCheap();
 
-  await base.changeToRus();
+  const prices = await catalogPage.getAllProductPrices();
 
-  await base.confirmAge();
+  expect(prices.length).toBeGreaterThan(1);
 
-  const pagePrice = PriceUtils.clean(await productPage.priceLabel.innerText());
+  for (let i = 0; i < prices.length - 1; i++) {
+    const currentPrice = prices[i];
+    const nextPrice = prices[i + 1];
+
+    expect(currentPrice).toBeLessThanOrEqual(nextPrice);
+  }
+});
+
+test('Add prduct to cart', async ({ productPage, cartDrawer, basePage, utils }) => {
+  await basePage.goto('specificProduct');
+  await basePage.changeToRus();
+  await basePage.confirmAge();
+
+  const pagePrice = utils.clean(await productPage.priceLabel.innerText());
 
   await productPage.addToCart();
-  await base.openCart();
+  await basePage.openCart();
 
-  await expect(cart.container).toBeVisible();
-  await expect(cart.countLabel).toContainText(/^1/);
+  await expect(cartDrawer.container).toBeVisible();
+  await expect(cartDrawer.countLabel).toContainText(/^1/);
 
-  const cartPrice = PriceUtils.clean(await cart.totalPriceLabel.innerText());
+  const cartPrice = utils.clean(await cartDrawer.totalPriceLabel.innerText());
   expect(cartPrice).toBe(pagePrice);
 });
 
-test('Increase Product Quantity in Cart', async ({ page }) => {
-  const productPage = new ProductPage(page);
-  const cart = new CartDrawer(page);
-  const base = new BasePage(page);
+test('Increase Product Quantity in Cart', async ({ productPage, cartDrawer, basePage, utils }) => {
+  await basePage.goto('specificProduct');
+  await basePage.changeToRus();
+  await basePage.confirmAge();
 
-  await base.goto('specificProduct');
-
-  await base.changeToRus();
-
-  await base.confirmAge();
-
-  const unitPrice = PriceUtils.clean(await productPage.priceLabel.innerText());
+  const unitPrice = utils.clean(await productPage.priceLabel.innerText());
 
   await productPage.addToCart();
-  await base.openCart();
+  await basePage.openCart();
 
-  await expect(cart.container).toBeVisible();
-  await cart.addOneMore();
+  await expect(cartDrawer.container).toBeVisible();
+  await cartDrawer.addOneMore();
 
-  await expect(cart.countLabel).toContainText('2');
+  await expect(cartDrawer.countLabel).toContainText('2');
 
-  const finalCartPrice = PriceUtils.clean(await cart.totalPriceLabel.innerText());
+  const finalCartPrice = utils.clean(await cartDrawer.totalPriceLabel.innerText());
   expect(finalCartPrice).toBe(unitPrice * 2);
 });
 
-test('Remove Product from Cart', async ({ page }) => {
-  const productPage = new ProductPage(page);
-  const cart = new CartDrawer(page);
-  const base = new BasePage(page);
-
-  await base.goto('specificProduct');
-
-  await base.changeToRus();
-
-  await base.confirmAge();
+test('Remove Product from Cart', async ({ productPage, cartDrawer, basePage }) => {
+  await basePage.goto('specificProduct');
+  await basePage.changeToRus();
+  await basePage.confirmAge();
 
   const productName = await productPage.title.innerText();
 
   await productPage.addToCart();
-  await base.openCart();
+  await basePage.openCart();
 
-  await expect(cart.container).toBeVisible();
-  await expect(cart.cartItems).toHaveCount(1);
+  await expect(cartDrawer.container).toBeVisible();
+  await expect(cartDrawer.cartItems).toHaveCount(1);
 
-  await cart.removeProduct(productName);
+  await cartDrawer.removeProduct(productName);
 
-  await expect(cart.cartItems).toHaveCount(0);
+  await expect(cartDrawer.cartItems).toHaveCount(0);
 });
 
-test('Complex test add, remove and add another', async ({ page }) => {
-  const cart = new CartDrawer(page);
-  const base = new BasePage(page);
-  const catalog = new CatalogPage(page);
-  const notification = new NotificationComponent(page);
+test('Complex test add, remove and add another', async ({
+  catalogPage,
+  cartDrawer,
+  basePage,
+  notification,
+  page,
+  data,
+}) => {
+  const ps5 = data.products.ps5Bundle;
+  const nintendo = data.products.Nintendo;
 
-  const ps5 = products.ps5Bundle;
-  const nintendo = products.Nintendo;
+  await basePage.goto('home');
+  await basePage.changeToRus();
 
-  await base.goto('home');
+  await catalogPage.openCatalog();
+  await catalogPage.tech.click();
+  await catalogPage.goodsForGamers.click();
+  await catalogPage.consoles.click();
 
-  await base.changeToRus();
-
-  await catalog.openCatalog();
-  await catalog.tech.click();
-  await catalog.goodsForGamers.click();
-  await catalog.consoles.click();
-
-  const expectedPricePs = await catalog.getProductPrice(ps5.slug);
-  await catalog.clickAddToCart(ps5.slug);
+  const expectedPricePs = await catalogPage.getProductPrice(ps5.slug);
+  await catalogPage.clickAddToCart(ps5.slug);
   await notification.waitForVisible(notification.addSuccessPattern);
   await notification.verifyAddSuccess();
 
-  await base.openCart();
-  await expect(cart.container).toBeVisible();
+  await basePage.openCart();
+  await expect(cartDrawer.container).toBeVisible();
 
-  const actualPricePS = await cart.getProductPriceBySlug(ps5.slug);
+  const actualPricePS = await cartDrawer.getProductPriceBySlug(ps5.slug);
+  expect(expectedPricePs).toBe(actualPricePS);
 
-  await expect(expectedPricePs).toBe(actualPricePS);
-
-  await cart.removeProduct(ps5.name);
+  await cartDrawer.removeProduct(ps5.name);
   await notification.waitForVisible(notification.removeSuccessPattern);
   await notification.verifyRemoveSuccess();
 
-  await cart.cartCloseButton.click();
+  await cartDrawer.cartCloseButton.click();
 
-  const expectedPriceNintendo = await catalog.getProductPrice(nintendo.slug);
-
-  await catalog.clickAddToCart(nintendo.slug);
+  const expectedPriceNintendo = await catalogPage.getProductPrice(nintendo.slug);
+  await catalogPage.clickAddToCart(nintendo.slug);
   await notification.waitForVisible(notification.addSuccessPattern);
   await notification.verifyAddSuccess();
 
-  await base.openCart();
-  await expect(cart.container).toBeVisible();
+  await basePage.openCart();
+  await expect(cartDrawer.container).toBeVisible();
 
-  const actualPriceNintendo = await cart.getProductPriceBySlug(nintendo.slug);
+  const actualPriceNintendo = await cartDrawer.getProductPriceBySlug(nintendo.slug);
+  expect(expectedPriceNintendo).toBe(actualPriceNintendo);
 
-  await expect(expectedPriceNintendo).toBe(actualPriceNintendo);
+  await cartDrawer.checkOut.click();
 
-  await cart.checkOut.click();
-
-  const checkoutPattern = new RegExp(`${routes.checkOutUa}|${routes.checkOutRu}`);
+  const checkoutPattern = new RegExp(`${data.routes.checkOutUa}|${data.routes.checkOutRu}`);
   await expect(page).toHaveURL(checkoutPattern);
 });

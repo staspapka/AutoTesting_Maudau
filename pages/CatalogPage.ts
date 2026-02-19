@@ -67,8 +67,9 @@ export class CatalogPage extends BasePage {
   }
 
   async filterByPrice(min: string, max: string) {
-    await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(10000);
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.minPriceInput.waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.waitForTimeout(5000);
     await this.minPriceInput.fill(min);
     await this.maxPriceInput.fill(max);
 

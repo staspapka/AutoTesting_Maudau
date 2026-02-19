@@ -1,53 +1,50 @@
-import { test, expect } from '@playwright/test';
-import { DeviceController } from './controllers/DeviceController';
-import { devicePayloads } from '../../testData/api/deviceData';
+import { test, expect } from '../../fixtures/base';
 
 test.describe.serial('Full API Request Lifecycle', () => {
-  let deviceController: DeviceController;
   let objectId: string;
 
-  test.beforeEach(async ({ request }) => {
-    deviceController = new DeviceController(request);
-  });
+  test('POST - Create new device', async ({ deviceController, data }) => {
+    const payload = data.api.iphone14;
+    const response = await deviceController.createDevice(payload);
 
-  test('POST - Create new device', async () => {
-    const response = await deviceController.createDevice(devicePayloads.iphone14);
     expect(response.status()).toBe(200);
-    ('');
+
     const body = await response.json();
     objectId = body.id;
 
     expect(body.id).toBeDefined();
-    expect(body.name).toBe(devicePayloads.iphone14.name);
+    expect(body.name).toBe(payload.name);
   });
 
-  test('GET - Validate device creation', async () => {
+  test('GET - Validate device creation', async ({ deviceController, data }) => {
     const response = await deviceController.getDeviceById(objectId);
     expect(response.status()).toBe(200);
 
     const body = await response.json();
     expect(body.id).toBe(objectId);
-    expect(body.name).toBe(devicePayloads.iphone14.name);
+    expect(body.name).toBe(data.api.iphone14.name);
   });
 
-  test('PUT - Full update of the device object', async () => {
-    const response = await deviceController.updateDevice(objectId, devicePayloads.iphone14Updated);
+  test('PUT - Full update of the device object', async ({ deviceController, data }) => {
+    const payload = data.api.iphone14Updated;
+    const response = await deviceController.updateDevice(objectId, payload);
     expect(response.status()).toBe(200);
 
     const body = await response.json();
-    expect(body.name).toBe(devicePayloads.iphone14Updated.name);
-    expect(body.data['Hard disk size']).toBe(devicePayloads.iphone14Updated.data['Hard disk size']);
+    expect(body.name).toBe(payload.name);
+    expect(body.data['Hard disk size']).toBe(payload.data['Hard disk size']);
   });
 
-  test('PATCH - Partial update (change device name only)', async () => {
-    const response = await deviceController.patchDevice(objectId, devicePayloads.iphonePatch);
+  test('PATCH - Partial update (change device name only)', async ({ deviceController, data }) => {
+    const payload = data.api.iphonePatch;
+    const response = await deviceController.patchDevice(objectId, payload);
     expect(response.status()).toBe(200);
 
     const body = await response.json();
-    expect(body.name).toBe(devicePayloads.iphonePatch.name);
+    expect(body.name).toBe(payload.name);
   });
 
-  test('DELETE - Remove the device from the system', async () => {
+  test('DELETE - Remove the device from the system', async ({ deviceController }) => {
     const response = await deviceController.deleteDevice(objectId);
     expect(response.status()).toBe(200);
 
@@ -55,7 +52,7 @@ test.describe.serial('Full API Request Lifecycle', () => {
     expect(body.message).toContain(objectId);
   });
 
-  test('GET - Final 404 validation after deletion', async () => {
+  test('GET - Final 404 validation after deletion', async ({ deviceController }) => {
     const response = await deviceController.getDeviceById(objectId);
     expect(response.status()).toBe(404);
   });
