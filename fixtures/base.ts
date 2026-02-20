@@ -10,6 +10,7 @@ import { priceFilter } from '../testData/filters';
 import { products, searchData } from '../testData/products';
 import { DeviceController } from '../tests/Api/controllers/DeviceController';
 import { devicePayloads } from '../testData/api/deviceData';
+import { JsonPlaceholderController } from '../tests/Api/controllers/JsonPlaceholderController';
 
 type MyFixtures = {
   catalogPage: CatalogPage;
@@ -18,6 +19,7 @@ type MyFixtures = {
   productPage: ProductPage;
   notification: NotificationComponent;
   deviceController: DeviceController;
+  apiPlaceholder: JsonPlaceholderController;
   utils: typeof PriceUtils;
   data: {
     routes: typeof routes;
@@ -61,6 +63,10 @@ export const test = base.extend<MyFixtures>({
       search: searchData,
       api: devicePayloads,
     });
+  },
+
+  apiPlaceholder: async ({ request }, use) => {
+    await use(new JsonPlaceholderController(request));
   },
 });
 
